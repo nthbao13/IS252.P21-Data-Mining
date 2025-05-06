@@ -7,6 +7,7 @@ import base64
 import os
 from flask import render_template, request, send_file
 from werkzeug.utils import secure_filename
+from sklearn.preprocessing import OneHotEncoder, LabelEncoder
 
 # Đường dẫn thư mục mặc định
 UPLOAD_FOLDER = 'uploads'
@@ -59,6 +60,52 @@ def preprocess_missing_value(df, col):
         print(f"Lỗi khi xử lý cột {col}: {str(e)}")
         return False
 
+def encode_categorical_data(df, encoding_method):
+    """Chuyển đổi dữ liệu categorical thành vector biểu diễn"""
+    nominal_cols = [col for col in df.columns if classify_column(df, col) == 'Nominal']
+    binary_cols = [col for col in df.columns if classify_column(df, col) == 'Binary']
+    
+    encoded_cols = {}
+    
+    # Xử lý các cột nominal
+    if nominal_cols:
+        if encoding_method == 'one-hot':
+            # One-hot encoding
+            encoder = OneHotEncoder(sparse_output=False, handle_unknown='ignore')
+            encoded_data = encoder.fit_transform(df[nominal_cols])
+            encoded_feature_names = encoder.get_feature_names_out(nominal_cols)
+            
+            # Thêm các cột mới vào DataFrame
+            for i, feature_name in enumerate(encoded_feature_names):
+                df[feature_name] = encoded_data[:, i]
+            
+            # Lưu thông tin các cột đã encode
+            for col in nominal_cols:
+                related_cols = [name for name in encoded_feature_names if name.startswith(col + '_')]
+                encoded_cols[col] = related_cols
+                
+            # Xóa các cột gốc
+            df.drop(columns=nominal_cols, inplace=True)
+            
+        elif encoding_method == 'label':
+            # Label encoding
+            for col in nominal_cols:
+                encoder = LabelEncoder()
+                df[col + '_encoded'] = encoder.fit_transform(df[col].astype(str))
+                encoded_cols[col] = [col + '_encoded']
+                df.drop(columns=[col], inplace=True)
+    
+    # Xử lý các cột binary (chuyển về 0-1)
+    for col in binary_cols:
+        if df[col].dtype in ['int64', 'float64']:
+            # Đảm bảo các cột binary chỉ có giá trị 0-1
+            unique_vals = sorted(df[col].unique())
+            if len(unique_vals) == 2:
+                mapping = {unique_vals[0]: 0, unique_vals[1]: 1}
+                df[col] = df[col].map(mapping)
+                encoded_cols[col] = [col]  # Không đổi tên nhưng đánh dấu là đã encode
+    
+    return encoded_cols
 
 def get_boxplot(df, col):
     """Tạo boxplot cho cột số"""
@@ -147,6 +194,10 @@ def preprocess_page():
         if selected_drop in df.columns:  # Kiểm tra cột có tồn tại
             df.drop(selected_drop, axis=1, inplace=True)
         
+        # Chuyển đổi categorical data thành vector
+        encoding_method = request.form.get('encoding_method', 'one-hot')
+        encoded_columns = encode_categorical_data(df, encoding_method)
+        
         # Lưu file đã xử lý
         output_filename = f'processed_{filename}'
         output_path = os.path.join(UPLOAD_FOLDER, output_filename)
@@ -158,6 +209,8 @@ def preprocess_page():
                             missing_methods=missing_methods,
                             boxplots=boxplots,
                             correlations=correlations,
+                            encoded_columns=encoded_columns,
+                            encoding_method=encoding_method,
                             filename=output_filename,
                             processed=True)
     

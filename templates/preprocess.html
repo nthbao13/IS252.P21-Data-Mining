@@ -11,6 +11,19 @@
                 <label>Upload CSV File:</label>
                 <input type="file" name="file" accept=".csv" required>
             </div>
+            
+            <div class="form-group">
+                <label>Phương pháp mã hóa dữ liệu category:</label>
+                <select name="encoding_method">
+                    <option value="one-hot">One-Hot Encoding</option>
+                    <option value="label">Label Encoding</option>
+                </select>
+                <small class="form-text text-muted">
+                    One-Hot Encoding: Tạo nhiều cột nhị phân (0/1) cho mỗi giá trị category.<br>
+                    Label Encoding: Chuyển đổi mỗi giá trị category thành một số nguyên.
+                </small>
+            </div>
+            
             <button type="submit" class="btn">Process Data</button>
         </form>
     {% else %}
@@ -52,6 +65,25 @@
                 {% endfor %}
             {% else %}
                 <p>No high correlations found</p>
+            {% endif %}
+        </div>
+        
+        <div class="result-section">
+            <h3>Categorical Encoding</h3>
+            {% if encoded_columns %}
+                <p>Phương pháp sử dụng: <strong>{{ encoding_method }}</strong></p>
+                {% for original_col, new_cols in encoded_columns.items() %}
+                    <div>
+                        <p>{{ original_col }} đã được chuyển đổi thành:</p>
+                        <ul>
+                            {% for col in new_cols %}
+                                <li>{{ col }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p>Không có dữ liệu category cần chuyển đổi</p>
             {% endif %}
         </div>
         
