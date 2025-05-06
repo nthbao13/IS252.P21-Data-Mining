@@ -1,0 +1,247 @@
+{% extends 'base.html' %}
+
+{% block title %}Rough Set Analysis Results{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <h1 class="mb-4">Rough Set Analysis Results</h1>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h3>Dataset</h3>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        {{ df_html|safe }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h3>Analysis Parameters</h3>
+                </div>
+                <div class="card-body">
+                    <p><strong>Condition Attributes:</strong> {{ attributes|join(', ') }}</p>
+                    <p><strong>Decision Column:</strong> {{ decision_col }}</p>
+                    <p><strong>Decision Value:</strong> {{ decision_value }}</p>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h3>Approximations</h3>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <h4>Lower Approximation</h4>
+                        <p>Objects that definitely belong to the concept:</p>
+                        <ul class="list-group">
+                            {% for obj in lower_approx %}
+                            <li class="list-group-item">{{ obj }}</li>
+                            {% else %}
+                            <li class="list-group-item">No objects in lower approximation</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+
+                    <div class="mb-3">
+                        <h4>Upper Approximation</h4>
+                        <p>Objects that possibly belong to the concept:</p>
+                        <ul class="list-group">
+                            {% for obj in upper_approx %}
+                            <li class="list-group-item">{{ obj }}</li>
+                            {% else %}
+                            <li class="list-group-item">No objects in upper approximation</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+
+                    <div class="mb-3">
+                        <h4>Boundary Region</h4>
+                        <p>Objects that are in the uncertainty region:</p>
+                        <ul class="list-group">
+                            {% for obj in upper_approx|list_difference(lower_approx) %}
+                            <li class="list-group-item">{{ obj }}</li>
+                            {% else %}
+                            <li class="list-group-item">No objects in boundary region</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h3>Reducts</h3>
+                </div>
+                <div class="card-body">
+                    <p>Minimal sets of attributes that preserve the same discernibility:</p>
+                    <ul class="list-group">
+                        {% for reduct in reducts %}
+                        <li class="list-group-item">{{ reduct|join(', ') }}</li>
+                        {% else %}
+                        <li class="list-group-item">No reducts found</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h3>Equivalence Classes</h3>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Equivalence Class</th>
+                                    <th>Objects</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for class_key, objects in eq_classes.items() %}
+                                <tr>
+                                    <td>{{ class_key }}</td>
+                                    <td>{{ objects|join(', ') }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h3>Approximation Steps</h3>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Equivalence Class</th>
+                                    <th>Objects</th>
+                                    <th>Target Intersection</th>
+                                    <th>Is Subset of Target</th>
+                                    <th>Has Intersection with Target</th>
+                                    <th>Classification</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for step in rough_steps %}
+                                <tr>
+                                    <td>{{ step.class|join(', ') }}</td>
+                                    <td>{{ step.objects|join(', ') }}</td>
+                                    <td>{{ step.target_intersection|join(', ') }}</td>
+                                    <td>{{ step.is_subset }}</td>
+                                    <td>{{ step.has_intersection }}</td>
+                                    <td>
+                                        {% if step.is_subset %}
+                                        Lower Approximation
+                                        {% elif step.has_intersection %}
+                                        Upper Approximation Only
+                                        {% else %}
+                                        Outside Approximation
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h3>Reduct Steps</h3>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Attribute Subset</th>
+                                    <th>Is Valid Reduct</th>
+                                    <th>Verification</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for step in reduct_steps %}
+                                <tr>
+                                    <td>{{ step.subset|join(', ') }}</td>
+                                    <td>
+                                        {% if step.is_valid %}
+                                        <span class="badge bg-success">Valid</span>
+                                        {% else %}
+                                        <span class="badge bg-danger">Invalid</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-info" type="button" data-bs-toggle="collapse" data-bs-target="#check-{{ loop.index }}">
+                                            Show Details
+                                        </button>
+                                        <div class="collapse mt-2" id="check-{{ loop.index }}">
+                                            <div class="card card-body">
+                                                <table class="table table-sm">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Discernibility Set</th>
+                                                            <th>Intersection</th>
+                                                            <th>Valid</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {% for check in step.checks %}
+                                                        <tr>
+                                                            <td>{{ check.disc_set|join(', ') }}</td>
+                                                            <td>{{ check.intersection|join(', ') }}</td>
+                                                            <td>
+                                                                {% if check.is_valid %}
+                                                                <span class="badge bg-success">Yes</span>
+                                                                {% else %}
+                                                                <span class="badge bg-danger">No</span>
+                                                                {% endif %}
+                                                            </td>
+                                                        </tr>
+                                                        {% endfor %}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-4 mb-5">
+        <a href="{{ url_for('reduct_page') }}" class="btn btn-primary">Analyze New Dataset</a>
+        <a href="/" class="btn btn-secondary">Back to Home</a>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block content %}
+    <h2>Data Preprocessing</h2>
+    {% if error %}
+        <p class="error">{{ error }}</p>
+    {% endif %}
+    
+    {% if not processed %}
+        <form method="post" enctype="multipart/form-data">
+            <div class="form-group">
+                <label>Upload CSV File:</label>
+                <input type="file" name="file" accept=".csv" required>
+            </div>
+            <button type="submit" class="btn">Process Data</button>
+        </form>
+    {% else %}
+        <div class="result-section">
+            <h3>Column Types</h3>
+            {% for col, type in column_types.items() %}
+                <p>{{ col }}: {{ type }}</p>
+            {% endfor %}
+        </div>
+        
+        <div class="result-section">
+            <h3>Missing Values Processed</h3>
+            {% for col, count in missing_values.items() %}
+                {% if count > 0 %}
+                    <p>{{ col }}: {{ count }} missing values replaced using {{ missing_methods[col] }}</p>
+                {% endif %}
+            {% endfor %}
+        </div>
+        
+        <div class="result-section">
+            <h3>Outliers Detected</h3>
+            {% if boxplots %}
+                {% for col, plot in boxplots.items() %}
+                    <div>
+                        <h4>{{ col }}</h4>
+                        <img src="data:image/png;base64,{{ plot }}" alt="Boxplot of {{ col }}">
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p>No outliers detected</p>
+            {% endif %}
+        </div>
+        
+        <div class="result-section">
+            <h3>High Correlations</h3>
+            {% if correlations %}
+                {% for corr in correlations %}
+                    <p>{{ corr.col1 }} and {{ corr.col2 }}: {{ corr.value|round(3) }}</p>
+                {% endfor %}
+            {% else %}
+                <p>No high correlations found</p>
+            {% endif %}
+        </div>
+        
+        <div class="result-section">
+            <h3>Download Processed File</h3>
+            <a href="{{ url_for('download_file', filename=filename) }}" class="btn">Download CSV</a>
+        </div>
+    {% endif %}
+{% endblock %}

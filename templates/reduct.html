@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+
+{% block title %}Rough Set Analysis{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1 class="mb-4">Rough Set Analysis</h1>
+
+    {% if error %}
+    <div class="alert alert-danger">
+        {{ error }}
+    </div>
+    {% endif %}
+
+    <div class="card">
+        <div class="card-header">
+            <h3>Upload CSV File</h3>
+        </div>
+        <div class="card-body">
+            <form method="POST" enctype="multipart/form-data">
+                <div class="mb-3">
+                    <label for="file" class="form-label">Choose CSV File</label>
+                    <input type="file" class="form-control" id="file" name="file" accept=".csv">
+                    <small class="text-muted">Please upload a CSV file with the data for analysis.</small>
+                </div>
+                <button type="submit" class="btn btn-primary">Upload</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="mt-4">
+        <a href="/" class="btn btn-secondary">Back to Home</a>
+    </div>
+</div>
+{% endblock %}
