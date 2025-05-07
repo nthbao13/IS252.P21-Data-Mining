@@ -3,7 +3,6 @@
     <h2>Decision Tree Analysis (ID3)</h2>
     
     <!-- Form chọn file - Always visible -->
-    {% if not result %}
     <div class="form-container">
         <form method="POST" enctype="multipart/form-data" id="upload-form">
             <div class="form-group">
@@ -12,18 +11,16 @@
                 <button type="submit" class="btn">Tải lên</button>
             </div>
         </form>
+        {% if filename %}
+            <div class="file-info">
+                <p><strong>File hiện tại:</strong> {{ filename }}</p>
+                <form method="GET" action="{{ url_for('decision_tree_page') }}">
+                    <input type="hidden" name="reset" value="true">
+                    <button type="submit" class="btn btn-secondary">Xóa file hiện tại</button>
+                </form>
+            </div>
+        {% endif %}
     </div>
-    {% else %}
-    <!-- Show file info when we have results -->
-    <div class="form-container">
-        <div class="file-info">
-            <p><strong>File hiện tại:</strong> {{ filename }}</p>
-            <form method="GET" action="{{ url_for('decision_tree_page') }}">
-                <button type="submit" class="btn btn-secondary">Tải lên file mới</button>
-            </form>
-        </div>
-    </div>
-    {% endif %}
 
     <!-- Hiển thị combobox chọn cột mục tiêu sau khi upload -->
     {% if columns and not result %}
@@ -47,7 +44,7 @@
                     </select>
                 </div>
                 <button type="submit" class="btn">Xây dựng cây quyết định</button>
-            </form>
+            </ grinding>
         </div>
     {% endif %}
 

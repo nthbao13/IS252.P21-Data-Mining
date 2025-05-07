@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block content %}
+    <h2>K-Means Clustering</h2>
+    
+    <!-- Form tải file và cấu hình -->
+    <div class="form-container">
+        <form method="POST" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="K">Số cụm (K):</label>
+                <input type="number" name="K" id="K" value="3" min="1" required>
+            </div>
+            <div class="form-group">
+                <label for="file">Chọn file CSV (không bắt buộc):</label>
+                <input type="file" name="file" id="file" accept=".csv">
+            </div>
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" name="use_sample_data" value="true">
+                    Sử dụng dữ liệu mẫu (2D)
+                </label>
+            </div>
+            <button type="submit" class="btn">Chạy K-Means</button>
+        </form>
+    </div>
+
+    <!-- Hiển thị lỗi nếu có -->
+    {% if error %}
+        <div class="error">{{ error }}</div>
+    {% endif %}
+
+    <!-- Hiển thị kết quả -->
+    {% if result %}
+        <div class="result-container">
+            <h3>Kết quả phân cụm</h3>
+            <p><strong>Số cụm (K):</strong> {{ result.K }}</p>
+            <p><strong>Số vòng lặp:</strong> {{ result.iterations }}</p>
+            
+            <!-- Hiển thị các bước giải thuật -->
+            <div class="steps-container">
+                <h4>Các bước giải thuật <span class="toggle-steps">[Hiện/Ẩn]</span></h4>
+                <div class="steps-content" style="display: none;">
+                    <ul>
+                        {% for step in result.steps %}
+                            <li>{{ step }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Hiển thị biểu đồ nếu có -->
+            {% if result.plot %}
+                <h4>Biểu đồ phân cụm</h4>
+                <div class="plot-container">
+                    <img src="data:image/png;base64,{{ result.plot }}" alt="K-Means Plot" class="plot">
+                </div>
+            {% endif %}
+            
+            <!-- Hiển thị dữ liệu -->
+            <h4>Dữ liệu phân cụm</h4>
+            {% if result.data is defined %}
+                <table class="table">
+                    <thead>
+                        <tr>
+                            {% for col in result.data.columns %}
+                                <th>{{ col }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for _, row in result.data.head(10).iterrows() %}
+                            <tr>
+                                {% for value in row %}
+                                    <td>{{ value | round(2) if value is float else value }}</td>
+                                {% endfor %}
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p>Không có dữ liệu để hiển thị.</p>
+            {% endif %}
+            
+            <!-- Hiển thị centroids -->
+            <h4>Centroids</h4>
+            <table class="table">
+                <thead>
+                    <tr>
+                        {% for col in result.data.columns[:-1] %}
+                            <th>{{ col }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for centroid in result.centroids %}
+                        <tr>
+                            {% for value in centroid %}
+                                <td>{{ value | round(2) }}</td>
+                            {% endfor %}
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+{% endblock %}
+
+{% block scripts %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const toggleSteps = document.querySelector('.toggle-steps');
+            if (toggleSteps) {
+                toggleSteps.addEventListener('click', function() {
+                    const stepsContent = document.querySelector('.steps-content');
+                    if (stepsContent.style.display === 'none') {
+                        stepsContent.style.display = 'block';
+                        this.textContent = '[Ẩn]';
+                    } else {
+                        stepsContent.style.display = 'none';
+                        this.textContent = '[Hiện/Ẩn]';
+                    }
+                });
+            }
+        });
+    </script>
+{% endblock %}
