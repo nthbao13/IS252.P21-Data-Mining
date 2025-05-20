@@ -7,22 +7,24 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <!-- Navigation Bar -->
     <div class="navbar">
         <a href="/" class="{% if request.path == '/' %}active{% endif %}">Home</a>
+        <a href="/preprocess" class="{% if request.path == '/preprocess' %}active{% endif %}">Preprocessing</a>
+        <a href="/association_rules" class="{% if request.path == '/association_rules' %}active{% endif %}">Association Rules</a>
+        <a href="/decision_tree" class="{% if request.path == '/decision_tree' %}active{% endif %}">Decision Tree</a>
+        <a href="/reduct" class="{% if request.path == '/reduct' %}active{% endif %}">Reduct</a>
+        <a href="/kmeans" class="{% if request.path == '/kmeans' %}active{% endif %}">K-Means</a>
         <a href="/naive-bayes" class="{% if request.path == '/naive-bayes' %}active{% endif %}">Naive Bayes</a>
+        <a href="/kohonen" class="{% if request.path == '/kohonen' %}active{% endif %}">Kohonen SOM</a>
     </div>
 
-    <!-- Main Container -->
     <div class="container">
         <h2>Naive Bayes Prediction</h2>
 
-        <!-- Error Section -->
         {% if error %}
             <div class="error">{{ error }}</div>
         {% endif %}
 
-        <!-- File Upload Section -->
         <div class="form-container">
             <h3>Upload Data</h3>
             <form method="POST" enctype="multipart/form-data" id="upload-form" onsubmit="showLoading('upload-loading')">
@@ -36,7 +38,6 @@
             <div class="loading" id="upload-loading">Loading...</div>
         </div>
 
-        <!-- Data Preview Section -->
         {% if df is not none %}
             <div class="result-container">
                 <h3>Data Preview</h3>
@@ -60,14 +61,15 @@
                 </table>
             </div>
 
-            <!-- Attribute Selection Section -->
             <div class="form-container">
                 <h3>Select Attributes</h3>
                 <form method="POST" action="/naive-bayes" id="select-form" onsubmit="showLoading('select-loading')">
                     <input type="hidden" name="action" value="select_attributes">
                     <div class="form-group">
-                        <label>Use Laplace Smoothing:</label>
-                        <input type="checkbox" name="laplace" value="yes" {% if session.laplace %}checked{% endif %}>
+                        <label>
+                            <input type="checkbox" name="laplace" value="yes" {% if session.laplace %}checked{% endif %}>
+                            Use Laplace Smoothing
+                        </label>
                     </div>
                     <div class="form-group">
                         <label for="target_attribute">Select Target Attribute:</label>
@@ -95,20 +97,20 @@
             </div>
         {% endif %}
 
-        <!-- Prediction Section -->
         {% if show_prediction_form %}
             <div class="predict-container">
                 <h3>Predict</h3>
                 <form method="POST" action="/naive-bayes/predict" id="predict-form" onsubmit="showLoading('predict-loading')">
                     {% for attr in session.selected_attributes %}
                         <div class="form-group">
-                            <label for="{{ attr }}">Select value for {{ attr }}:</label>
+                            <label for="{{ attr }}">{{ attr }}:</label>
                             <select name="{{ attr }}" id="{{ attr }}" class="predict-select" required>
+                                <option value="">Select Value</option>
                                 {% for val in session.attribute_values[attr] %}
                                     <option value="{{ val }}">{{ val }}</option>
                                 {% endfor %}
                             </select>
-                            <button type="button" class="btn" style="background-color: #dc3545;" onclick="removeAttribute('{{ attr }}')">Remove</button>
+                            <button type="button" class="btn btn-secondary" onclick="removeAttribute('{{ attr }}')">Remove</button>
                         </div>
                     {% endfor %}
                     <button type="submit" class="btn">Predict</button>
@@ -117,7 +119,6 @@
             </div>
         {% endif %}
 
-        <!-- Results Section -->
         {% if result and result.success %}
             <div class="prediction-result">
                 <h3>Prediction Result</h3>
@@ -125,14 +126,10 @@
                 <p><strong>Probability:</strong> {{ "%.2f" | format(result.probabilities[result.predicted_class] * 100) }}%</p>
             </div>
 
-            <!-- Calculation Steps Section -->
             {% if result.calculation_steps %}
                 <div class="steps-container">
-                    <h3>
-                        Calculation Steps
-                        <span class="toggle-steps" onclick="toggleSection('steps-content')">Show/Hide</span>
-                    </h3>
-                    <div class="steps-content" id="steps-content" style="display: none;">
+                    <h3>Calculation Steps <span class="toggle-steps">[Hiện/Ẩn]</span></h3>
+                    <div class="steps-content" style="display: none;">
                         {% for section in result.calculation_steps %}
                             <h4>{{ section.title }}</h4>
                             <ul>
@@ -145,7 +142,6 @@
                 </div>
             {% endif %}
 
-            <!-- Feature Distribution Plots -->
             {% if result.feature_distributions %}
                 <div class="result-container">
                     <h3>Feature Distribution by Class</h3>
@@ -163,87 +159,87 @@
     </div>
 
     <script>
-        // Show loading spinner
-        function showLoading(loadingId) {
-            const loading = document.getElementById(loadingId);
-            if (loading) {
-                loading.style.display = 'block';
-                setTimeout(() => {
-                    loading.style.display = 'none';
-                }, 5000); // Hide after 5 seconds
-            }
-        }
-
-        // Preview uploaded CSV data
-        function previewData() {
-            const fileInput = document.getElementById('file');
-            if (!fileInput.files.length) return;
-
-            const file = fileInput.files[0];
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const text = e.target.result;
-                const lines = text.split('\n').filter(line => line.trim() !== '');
-                if (lines.length < 1) return;
-
-                const headers = lines[0].split(',').map(h => h.trim());
-                const rows = lines.slice(1, 6).map(line => line.split(',').map(c => c.trim()));
-                const table = document.createElement('table');
-                const thead = document.createElement('thead');
-                const tbody = document.createElement('tbody');
-
-                const headerRow = document.createElement('tr');
-                headers.forEach(header => {
-                    const th = document.createElement('th');
-                    th.textContent = header;
-                    headerRow.appendChild(th);
+        document.addEventListener('DOMContentLoaded', function() {
+            const toggleSteps = document.querySelectorAll('.toggle-steps');
+            toggleSteps.forEach(toggle => {
+                toggle.addEventListener('click', function() {
+                    const stepsContent = this.parentElement.nextElementSibling;
+                    if (stepsContent.style.display === 'none') {
+                        stepsContent.style.display = 'block';
+                        this.textContent = '[Ẩn]';
+                    } else {
+                        stepsContent.style.display = 'none';
+                        this.textContent = '[Hiện/Ẩn]';
+                    }
                 });
-                thead.appendChild(headerRow);
+            });
 
-                rows.forEach(row => {
-                    const tr = document.createElement('tr');
-                    row.forEach(cell => {
-                        const td = document.createElement('td');
-                        td.textContent = cell;
-                        tr.appendChild(td);
+            function showLoading(loadingId) {
+                const loading = document.getElementById(loadingId);
+                if (loading) {
+                    loading.style.display = 'block';
+                    setTimeout(() => {
+                        loading.style.display = 'none';
+                    }, 5000);
+                }
+            }
+
+            function previewData() {
+                const fileInput = document.getElementById('file');
+                if (!fileInput.files.length) return;
+
+                const file = fileInput.files[0];
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const text = e.target.result;
+                    const lines = text.split('\n').filter(line => line.trim() !== '');
+                    if (lines.length < 1) return;
+
+                    const headers = lines[0].split(',').map(h => h.trim());
+                    const rows = lines.slice(1, 6).map(line => line.split(',').map(c => c.trim()));
+                    const table = document.createElement('table');
+                    const thead = document.createElement('thead');
+                    const tbody = document.createElement('tbody');
+
+                    const headerRow = document.createElement('tr');
+                    headers.forEach(header => {
+                        const th = document.createElement('th');
+                        th.textContent = header;
+                        headerRow.appendChild(th);
                     });
-                    tbody.appendChild(tr);
-                });
+                    thead.appendChild(headerRow);
 
-                table.appendChild(thead);
-                table.appendChild(tbody);
-                const previewSection = document.createElement('div');
-                previewSection.className = 'result-container';
-                previewSection.innerHTML = '<h3>Data Preview</h3>';
-                previewSection.appendChild(table);
-                const existingPreview = document.querySelector('.result-container');
-                if (existingPreview) existingPreview.remove();
-                document.querySelector('#upload-form').after(previewSection);
-            };
-            reader.readAsText(file);
-        }
+                    rows.forEach(row => {
+                        const tr = document.createElement('tr');
+                        row.forEach(cell => {
+                            const td = document.createElement('td');
+                            td.textContent = cell;
+                            tr.appendChild(td);
+                        });
+                        tbody.appendChild(tr);
+                    });
 
-        // Remove attribute from prediction form
-        function removeAttribute(attr) {
-            const form = document.querySelector('#predict-form');
-            const attrDiv = document.querySelector(`select[name="${attr}"]`).parentElement;
-            attrDiv.remove();
-            const checkbox = document.querySelector(`input[name="selected_attributes"][value="${attr}"]`);
-            if (checkbox) checkbox.checked = false;
-        }
-
-        // Toggle visibility of calculation steps
-        function toggleSection(sectionId) {
-            const section = document.getElementById(sectionId);
-            const toggle = section.previousElementSibling.querySelector('.toggle-steps');
-            if (section.style.display === 'none') {
-                section.style.display = 'block';
-                toggle.textContent = 'Hide';
-            } else {
-                section.style.display = 'none';
-                toggle.textContent = 'Show';
+                    table.appendChild(thead);
+                    table.appendChild(tbody);
+                    const previewSection = document.createElement('div');
+                    previewSection.className = 'result-container';
+                    previewSection.innerHTML = '<h3>Data Preview</h3>';
+                    previewSection.appendChild(table);
+                    const existingPreview = document.querySelector('.result-container');
+                    if (existingPreview) existingPreview.remove();
+                    document.querySelector('#upload-form').after(previewSection);
+                };
+                reader.readAsText(file);
             }
-        }
+
+            function removeAttribute(attr) {
+                const form = document.querySelector('#predict-form');
+                const attrDiv = document.querySelector(`select[name="${attr}"]`).parentElement;
+                attrDiv.remove();
+                const checkbox = document.querySelector(`input[name="selected_attributes"][value="${attr}"]`);
+                if (checkbox) checkbox.checked = false;
+            }
+        });
     </script>
 </body>
 </html>

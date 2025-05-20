@@ -7,25 +7,28 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <!-- Navigation Bar -->
     <div class="navbar">
         <a href="/" class="{% if request.path == '/' %}active{% endif %}">Home</a>
+        <a href="/preprocess" class="{% if request.path == '/preprocess' %}active{% endif %}">Preprocessing</a>
+        <a href="/association_rules" class="{% if request.path == '/association_rules' %}active{% endif %}">Association Rules</a>
+        <a href="/decision_tree" class="{% if request.path == '/decision_tree' %}active{% endif %}">Decision Tree</a>
+        <a href="/reduct" class="{% if request.path == '/reduct' %}active{% endif %}">Reduct</a>
+        <a href="/kmeans" class="{% if request.path == '/kmeans' %}active{% endif %}">K-Means</a>
+        <a href="/naive-bayes" class="{% if request.path == '/naive-bayes' %}active{% endif %}">Naive Bayes</a>
+        <a href="/kohonen" class="{% if request.path == '/kohonen' %}active{% endif %}">Kohonen SOM</a>
     </div>
 
-    <!-- Main Container -->
     <div class="container">
         <h2>Kohonen Self-Organizing Map</h2>
 
-        <!-- Error Section -->
         {% if error %}
             <div class="error">{{ error }}</div>
         {% endif %}
 
-        <!-- File Upload Section -->
         <div class="form-container">
             <h3>Upload Data</h3>
             <p><strong>Note:</strong> Upload a CSV file with numerical columns only.</p>
-            <form method="POST" enctype="multipart/form-data" id="upload-form">
+            <form method="POST" enctype="multipart/form-data" id="upload-form" onsubmit="showLoading('upload-loading')">
                 <input type="hidden" name="action" value="upload">
                 <div class="form-group">
                     <label for="file">Select CSV File:</label>
@@ -33,9 +36,9 @@
                 </div>
                 <button type="submit" class="btn">Upload</button>
             </form>
+            <div class="loading" id="upload-loading">Loading...</div>
         </div>
 
-        <!-- Data Preview Section -->
         {% if df is not none %}
             <div class="result-container">
                 <h3>Data Preview</h3>
@@ -59,10 +62,9 @@
                 </table>
             </div>
 
-            <!-- SOM Configuration Section -->
             <div class="form-container">
                 <h3>Configure SOM</h3>
-                <form method="POST" action="/kohonen" id="train-form">
+                <form method="POST" action="/kohonen" id="train-form" onsubmit="showLoading('train-loading')">
                     <input type="hidden" name="action" value="train_som">
                     <div class="form-group">
                         <label for="num_clusters">Number of Clusters:</label>
@@ -90,22 +92,23 @@
                     </div>
                     <button type="submit" class="btn">Train SOM</button>
                 </form>
+                <div class="loading" id="train-loading">Loading...</div>
             </div>
         {% endif %}
 
-        <!-- Results Section -->
         {% if result and result.success %}
             <div class="result-container">
                 <h3>SOM Results</h3>
-                <p><strong>Number of Clusters:</strong> {{ result.num_clusters }}</p>
-                <p><strong>Map Size:</strong> {{ result.map_height }} × {{ result.map_width }}</p>
-                <p><strong>Learning Rate:</strong> {{ result.learning_rate }}</p>
-                <p><strong>Neighborhood Radius:</strong> {{ result.radius }}</p>
-                <p><strong>Iterations:</strong> {{ result.iterations }}</p>
-                <p><strong>Columns Used:</strong> {{ result.column_names | join(', ') }}</p>
+                <div class="info-container">
+                    <p><strong>Number of Clusters:</strong> {{ result.num_clusters }}</p>
+                    <p><strong>Map Size:</strong> {{ result.map_height }} × {{ result.map_width }}</p>
+                    <p><strong>Learning Rate:</strong> {{ result.learning_rate }}</p>
+                    <p><strong>Neighborhood Radius:</strong> {{ result.radius }}</p>
+                    <p><strong>Iterations:</strong> {{ result.iterations }}</p>
+                    <p><strong>Columns Used:</strong> {{ result.column_names | join(', ') }}</p>
+                </div>
             </div>
 
-            <!-- Neuron Weight Vectors -->
             {% if result.weight_vectors %}
                 <div class="result-container">
                     <h3>Neuron Weight Vectors</h3>
@@ -123,7 +126,7 @@
                                 <tr>
                                     <td>{{ weight.Neuron }}</td>
                                     {% for column in result.column_names %}
-                                        <td>{{ weight[column] }}</td>
+                                        <td>{{ weight[column] | round(2) }}</td>
                                     {% endfor %}
                                 </tr>
                             {% endfor %}
@@ -132,7 +135,6 @@
                 </div>
             {% endif %}
 
-            <!-- Cluster Assignments -->
             {% if result.clusters %}
                 <div class="result-container">
                     <h3>Cluster Assignments</h3>
@@ -158,54 +160,65 @@
     </div>
 
     <script>
-        // Preview uploaded CSV data
-        function previewData() {
-            const fileInput = document.getElementById('file');
-            if (!fileInput.files.length) return;
+        document.addEventListener('DOMContentLoaded', function() {
+            function showLoading(loadingId) {
+                const loading = document.getElementById(loadingId);
+                if (loading) {
+                    loading.style.display = 'block';
+                    setTimeout(() => {
+                        loading.style.display = 'none';
+                    }, 5000);
+                }
+            }
 
-            const file = fileInput.files[0];
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const text = e.target.result;
-                const lines = text.split('\n').filter(line => line.trim() !== '');
-                if (lines.length < 1) return;
+            function previewData() {
+                const fileInput = document.getElementById('file');
+                if (!fileInput.files.length) return;
 
-                const headers = lines[0].split(',').map(h => h.trim());
-                const rows = lines.slice(1, 6).map(line => line.split(',').map(c => c.trim()));
-                const table = document.createElement('table');
-                const thead = document.createElement('thead');
-                const tbody = document.createElement('tbody');
+                const file = fileInput.files[0];
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const text = e.target.result;
+                    const lines = text.split('\n').filter(line => line.trim() !== '');
+                    if (lines.length < 1) return;
 
-                const headerRow = document.createElement('tr');
-                headers.forEach(header => {
-                    const th = document.createElement('th');
-                    th.textContent = header;
-                    headerRow.appendChild(th);
-                });
-                thead.appendChild(headerRow);
+                    const headers = lines[0].split(',').map(h => h.trim());
+                    const rows = lines.slice(1, 6).map(line => line.split(',').map(c => c.trim()));
+                    const table = document.createElement('table');
+                    const thead = document.createElement('thead');
+                    const tbody = document.createElement('tbody');
 
-                rows.forEach(row => {
-                    const tr = document.createElement('tr');
-                    row.forEach(cell => {
-                        const td = document.createElement('td');
-                        td.textContent = cell;
-                        tr.appendChild(td);
+                    const headerRow = document.createElement('tr');
+                    headers.forEach(header => {
+                        const th = document.createElement('th');
+                        th.textContent = header;
+                        headerRow.appendChild(th);
                     });
-                    tbody.appendChild(tr);
-                });
+                    thead.appendChild(headerRow);
 
-                table.appendChild(thead);
-                table.appendChild(tbody);
-                const previewSection = document.createElement('div');
-                previewSection.className = 'result-container';
-                previewSection.innerHTML = '<h3>Data Preview</h3>';
-                previewSection.appendChild(table);
-                const existingPreview = document.querySelector('.result-container');
-                if (existingPreview) existingPreview.remove();
-                document.querySelector('#upload-form').after(previewSection);
-            };
-            reader.readAsText(file);
-        }
+                    rows.forEach(row => {
+                        const tr = document.createElement('tr');
+                        row.forEach(cell => {
+                            const td = document.createElement('td');
+                            td.textContent = cell;
+                            tr.appendChild(td);
+                        });
+                        tbody.appendChild(tr);
+                    });
+
+                    table.appendChild(thead);
+                    table.appendChild(tbody);
+                    const previewSection = document.createElement('div');
+                    previewSection.className = 'result-container';
+                    previewSection.innerHTML = '<h3>Data Preview</h3>';
+                    previewSection.appendChild(table);
+                    const existingPreview = document.querySelector('.result-container');
+                    if (existingPreview) existingPreview.remove();
+                    document.querySelector('#upload-form').after(previewSection);
+                };
+                reader.readAsText(file);
+            }
+        });
     </script>
 </body>
 </html>

@@ -1,70 +1,72 @@
 {% extends 'base.html' %}
-
 {% block title %}Select Attributes{% endblock %}
-
 {% block content %}
-<div class="container mt-5">
-    <h1 class="mb-4">Select Attributes for Rough Set Analysis</h1>
+<div class="container">
+    <h1>Select Attributes for Rough Set Analysis</h1>
 
-    <div class="card">
-        <div class="card-header">
-            <h3>File: {{ filename }}</h3>
-        </div>
-        <div class="card-body">
-            <form method="POST" action="{{ url_for('reduct_analyze') }}">
-                <div class="mb-3">
-                    <label for="index_col" class="form-label">Select Index Column (Optional)</label>
-                    <select class="form-select" id="index_col" name="index_col">
-                        <option value="">None</option>
-                        {% for column in columns %}
-                        <option value="{{ column }}">{{ column }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label">Select Condition Attributes</label>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="select-all-attributes">
-                        <label class="form-check-label" for="select-all-attributes">
-                            Select/Deselect All
-                        </label>
+    <div class="form-container">
+        <div class="card">
+            <div class="card-header">
+                <h3>File: {{ filename }}</h3>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('reduct_analyze') }}">
+                    <div class="form-group">
+                        <label for="index_col" class="form-label">Select Index Column (Optional)</label>
+                        <select class="form-select" id="index_col" name="index_col">
+                            <option value="">None</option>
+                            {% for column in columns %}
+                            <option value="{{ column }}">{{ column }}</option>
+                            {% endfor %}
+                        </select>
                     </div>
-                    <hr>
-                    {% for column in columns %}
-                    <div class="form-check">
-                        <input class="form-check-input attribute-checkbox" type="checkbox" name="attributes" value="{{ column }}" id="attr-{{ loop.index }}">
-                        <label class="form-check-label" for="attr-{{ loop.index }}">
-                            {{ column }}
-                        </label>
-                    </div>
-                    {% endfor %}
-                </div>
 
-                <div class="mb-3">
-                    <label for="decision_col" class="form-label">Select Decision Column</label>
-                    <select class="form-select" id="decision_col" name="decision_col" required>
-                        <option value="">Select Decision Column</option>
+                    <div class="form-group">
+                        <label class="form-label">Select Condition Attributes</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="select-all-attributes">
+                            <label class="form-check-label" for="select-all-attributes">
+                                Select/Deselect All
+                            </label>
+                        </div>
+                        <hr>
                         {% for column in columns %}
-                        <option value="{{ column }}">{{ column }}</option>
+                        <div class="form-check">
+                            <input class="form-check-input attribute-checkbox" type="checkbox" name="attributes" value="{{ column }}" id="attr-{{ loop.index }}">
+                            <label class="form-check-label" for="attr-{{ loop.index }}">
+                                {{ column }}
+                            </label>
+                        </div>
                         {% endfor %}
-                    </select>
-                </div>
+                    </div>
 
-                <div class="mb-3">
-                    <label for="decision_value" class="form-label">Select Decision Value</label>
-                    <select class="form-select" id="decision_value" name="decision_value" required>
-                        <option value="">First select a decision column</option>
-                    </select>
-                </div>
+                    <div class="form-group">
+                        <label for="decision_col" class="form-label">Select Decision Column</label>
+                        <select class="form-select" id="decision_col" name="decision_col" required>
+                            <option value="">Select Decision Column</option>
+                            {% for column in columns %}
+                            <option value="{{ column }}">{{ column }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
 
-                <button type="submit" class="btn btn-primary">Analyze</button>
-                <a href="{{ url_for('reduct_page') }}" class="btn btn-secondary">Cancel</a>
-            </form>
+                    <div class="form-group">
+                        <label for="decision_value" class="form-label">Select Decision Value</label>
+                        <select class="form-select" id="decision_value" name="decision_value" required>
+                            <option value="">First select a decision column</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Analyze</button>
+                    <a href="{{ url_for('reduct_page') }}" class="btn btn-secondary">Cancel</a>
+                </form>
+            </div>
         </div>
     </div>
 </div>
+{% endblock %}
 
+{% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Handle select all checkbox
@@ -102,14 +104,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const formData = new FormData();
         formData.append('decision_col', decisionCol);
         
-        console.log("Sending AJAX request for decision column:", decisionCol);
         fetch('{{ url_for("get_decision_values_route") }}', {
             method: 'POST',
             body: formData
         })
         .then(response => response.json())
         .then(data => {
-            console.log("Received decision values:", data);
             decisionValueSelect.innerHTML = '';
             if (data.values.length === 0) {
                 decisionValueSelect.innerHTML = '<option value="">No values found</option>';

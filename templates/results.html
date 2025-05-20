@@ -1,14 +1,12 @@
 {% extends 'base.html' %}
-
 {% block title %}Rough Set Analysis Results{% endblock %}
-
 {% block content %}
-<div class="container-fluid mt-4">
-    <h1 class="mb-4">Rough Set Analysis Results</h1>
+<div class="container">
+    <h1>Rough Set Analysis Results</h1>
 
     <div class="row">
         <div class="col-md-6">
-            <div class="card mb-4">
+            <div class="card">
                 <div class="card-header">
                     <h3>Dataset</h3>
                 </div>
@@ -21,7 +19,7 @@
         </div>
 
         <div class="col-md-6">
-            <div class="card mb-4">
+            <div class="card">
                 <div class="card-header">
                     <h3>Analysis Parameters</h3>
                 </div>
@@ -32,12 +30,12 @@
                 </div>
             </div>
 
-            <div class="card mb-4">
+            <div class="card">
                 <div class="card-header">
                     <h3>Approximations</h3>
                 </div>
                 <div class="card-body">
-                    <div class="mb-3">
+                    <div>
                         <h4>Lower Approximation</h4>
                         <p>Objects that definitely belong to the concept:</p>
                         <ul class="list-group">
@@ -49,7 +47,7 @@
                         </ul>
                     </div>
 
-                    <div class="mb-3">
+                    <div>
                         <h4>Upper Approximation</h4>
                         <p>Objects that possibly belong to the concept:</p>
                         <ul class="list-group">
@@ -61,7 +59,7 @@
                         </ul>
                     </div>
 
-                    <div class="mb-3">
+                    <div>
                         <h4>Boundary Region</h4>
                         <p>Objects that are in the uncertainty region:</p>
                         <ul class="list-group">
@@ -75,7 +73,7 @@
                 </div>
             </div>
 
-            <div class="card mb-4">
+            <div class="card">
                 <div class="card-header">
                     <h3>Reducts</h3>
                 </div>
@@ -95,7 +93,7 @@
 
     <div class="row">
         <div class="col-12">
-            <div class="card mb-4">
+            <div class="card">
                 <div class="card-header">
                     <h3>Equivalence Classes</h3>
                 </div>
@@ -125,7 +123,7 @@
 
     <div class="row">
         <div class="col-12">
-            <div class="card mb-4">
+            <div class="card">
                 <div class="card-header">
                     <h3>Approximation Steps</h3>
                 </div>
@@ -171,7 +169,7 @@
 
     <div class="row">
         <div class="col-12">
-            <div class="card mb-4">
+            <div class="card">
                 <div class="card-header">
                     <h3>Reduct Steps</h3>
                 </div>
@@ -200,7 +198,7 @@
                                         <button class="btn btn-sm btn-info" type="button" data-bs-toggle="collapse" data-bs-target="#check-{{ loop.index }}">
                                             Show Details
                                         </button>
-                                        <div class="collapse mt-2" id="check-{{ loop.index }}">
+                                        <div class="collapse" id="check-{{ loop.index }}">
                                             <div class="card card-body">
                                                 <table class="table table-sm">
                                                     <thead>
@@ -239,7 +237,7 @@
         </div>
     </div>
 
-    <div class="mt-4 mb-5">
+    <div>
         <a href="{{ url_for('reduct_page') }}" class="btn btn-primary">Analyze New Dataset</a>
         <a href="/" class="btn btn-secondary">Back to Home</a>
     </div>

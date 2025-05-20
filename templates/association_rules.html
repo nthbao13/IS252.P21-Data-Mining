@@ -1,76 +1,79 @@
 {% extends "base.html" %}
 {% block content %}
-    <h2>Association Rules Analysis</h2>
-    
-    <!-- Form chọn file và nhập minsup, minconfidence -->
-    <form method="POST" enctype="multipart/form-data" class="form-container">
-        <div class="form-group">
-            <label for="file">Chọn file CSV:</label>
-            <input type="file" name="file" id="file" accept=".csv" required>
-        </div>
+    <div class="container">
+        <h2>Association Rules Analysis</h2>
         
-        <div class="form-group">
-            <label for="minsup">Min Support (0-1):</label>
-            <input type="range" name="minsup" id="minsup" min="0" max="1" step="0.01" value="0.4" oninput="minsupValue.value=this.value">
-            <output id="minsupValue">0.4</output>
+        <div class="form-container">
+            <form method="POST" enctype="multipart/form-data" class="form-container">
+                <div class="form-group">
+                    <label for="file">Chọn file CSV:</label>
+                    <input type="file" name="file" id="file" accept=".csv" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="minsup">Min Support (0-1):</label>
+                    <input type="range" name="minsup" id="minsup" min="0" max="1" step="0.01" value="0.4" oninput="minsupValue.value=this.value">
+                    <output id="minsupValue">0.4</output>
+                </div>
+                
+                <div class="form-group">
+                    <label for="minconf">Min Confidence (0-1):</label>
+                    <input type="range" name="minconf" id="minconf" min="0" max="1" step="0.01" value="0.4" oninput="minconfValue.value=this.value">
+                    <output id="minconfValue">0.4</output>
+                </div>
+                
+                <button type="submit" class="btn">Phân tích</button>
+            </form>
         </div>
-        
-        <div class="form-group">
-            <label for="minconf">Min Confidence (0-1):</label>
-            <input type="range" name="minconf" id="minconf" min="0" max="1" step="0.01" value="0.4" oninput="minconfValue.value=this.value">
-            <output id="minconfValue">0.4</output>
-        </div>
-        
-        <button type="submit" class="btn">Phân tích</button>
-    </form>
 
-    <!-- Hiển thị lỗi nếu có -->
-    {% if error %}
-        <div class="error">{{ error }}</div>
-    {% endif %}
+        {% if error %}
+            <div class="error">{{ error }}</div>
+        {% endif %}
 
-    <!-- Hiển thị kết quả -->
-    {% if result %}
-        <div class="result-container">
-            <h3>Tập phổ biến (Frequent Itemsets)</h3>
-            <table>
-                <tr>
-                    <th>Itemset</th>
-                    <th>Support</th>
-                </tr>
-                {% for itemset, support in result.frequent_itemsets %}
+        {% if result %}
+            <div class="result-container">
+                <h3>Tập phổ biến (Frequent Itemsets)</h3>
+                <table>
                     <tr>
-                        <td>{{ itemset | join(', ') }}</td>
-                        <td>{{ "%.3f" | format(support) }}</td>
+                        <th>Itemset</th>
+                        <th>Support</th>
                     </tr>
-                {% endfor %}
-            </table>
+                    {% for itemset, support in result.frequent_itemsets %}
+                        <tr>
+                            <td>{{ itemset | join(', ') }}</td>
+                            <td>{{ "%.3f" | format(support) }}</td>
+                        </tr>
+                    {% endfor %}
+                </table>
 
-            <h3>Tập phổ biến tối đại (Maximal Frequent Itemsets)</h3>
-            <ul>
-                {% for itemset in result.maximal_frequent_itemsets %}
-                    <li>{{ itemset | join(', ') }}</li>
-                {% endfor %}
-            </ul>
+                <h3>Tập phổ biến tối đại (Maximal Frequent Itemsets)</h3>
+                <ul>
+                    {% for itemset in result.maximal_frequent_itemsets %}
+                        <li>{{ itemset | join(', ') }}</li>
+                    {% endfor %}
+                </ul>
 
-            <h3>Luật kết hợp (Association Rules)</h3>
-            <table>
-                <tr>
-                    <th>Antecedent</th>
-                    <th>Consequent</th>
-                    <th>Confidence</th>
-                </tr>
-                {% for A, B, confidence in result.association_rules %}
+                <h3>Luật kết hợp (Association Rules)</h3>
+                <table>
                     <tr>
-                        <td>{{ A | join(', ') }}</td>
-                        <td>{{ B | join(', ') }}</td>
-                        <td>{{ "%.3f" | format(confidence) }}</td>
+                        <th>Antecedent</th>
+                        <th>Consequent</th>
+                        <th>Confidence</th>
                     </tr>
-                {% endfor %}
-            </table>
+                    {% for A, B, confidence in result.association_rules %}
+                        <tr>
+                            <td>{{ A | join(', ') }}</td>
+                            <td>{{ B | join(', ') }}</td>
+                            <td>{{ "%.3f" | format(confidence) }}</td>
+                        </tr>
+                    {% endfor %}
+                </table>
 
-            <h3>Biểu đồ Support</h3>
-            <img src="data:image/png;base64,{{ result.plot }}" alt="Support Plot" class="plot">
-        </div>
-    {% endif %}
+                <h3>Biểu đồ Support</h3>
+                <div class="plot-container">
+                    <img src="data:image/png;base64,{{ result.plot }}" alt="Support Plot" class="plot">
+                </div>
+            </div>
+        {% endif %}
+    </div>
 {% endblock %}

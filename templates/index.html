@@ -1,15 +1,19 @@
 {% extends "base.html" %}
 {% block content %}
-    <h2>Welcome to Data Processing Platform</h2>
-    <p>Select an option from the navigation bar above:</p>
-    <ul>
-        <li><a href="{{ url_for('index') }}">Home Page</a></li>
-        <li><a href="{{ url_for('preprocess_page') }}">Preprocessing</a></li>
-        <li><a href="{{ url_for('association_rules_page') }}">Association Rules</a></li>
-        <li><a href="{{ url_for('decision_tree_page') }}">Decision Tree</a></li>
-        <li><a href="{{ url_for('reduct_page') }}">Reduct</a></li>
-        <li><a href="{{ url_for('kmeans_page') }}">K-Means</a></li>
-        <li><a href="{{ url_for('naive_bayes_page') }}">Naive Bayes</a></li>
-        <li><a href="{{ url_for('kohonen_page') }}">Kohonen</a></li>
-    </ul>
+    <div class="container">
+        <h2>Welcome to Data Processing Platform</h2>
+        <p>Select an option from the navigation bar above or explore below:</p>
+        <div class="info-container">
+            <ul>
+                <li><a href="{{ url_for('index') }}">Home Page</a></li>
+                <li><a href="{{ url_for('preprocess_page') }}">Preprocessing</a></li>
+                <li><a href="{{ url_for('association_rules_page') }}">Association Rules</a></li>
+                <li><a href="{{ url_for('decision_tree_page') }}">Decision Tree</a></li>
+                <li><a href="{{ url_for('reduct_page') }}">Reduct</a></li>
+                <li><a href="{{ url_for('kmeans_page') }}">K-Means</a></li>
+                <li><a href="{{ url_for('naive_bayes_page') }}">Naive Bayes</a></li>
+                <li><a href="{{ url_for('kohonen_page') }}">Kohonen SOM</a></li>
+            </ul>
+        </div>
+    </div>
 {% endblock %}

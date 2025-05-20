@@ -1,97 +1,103 @@
 {% extends "base.html" %}
 {% block content %}
+<div class="container">
     <h2>Data Preprocessing</h2>
     {% if error %}
-        <p class="error">{{ error }}</p>
+        <div class="error">{{ error }}</div>
     {% endif %}
     
     {% if not processed %}
-        <form method="post" enctype="multipart/form-data">
-            <div class="form-group">
-                <label>Upload CSV File:</label>
-                <input type="file" name="file" accept=".csv" required>
-            </div>
-            
-            <div class="form-group">
-                <label>Phương pháp mã hóa dữ liệu category:</label>
-                <select name="encoding_method">
-                    <option value="one-hot">One-Hot Encoding</option>
-                    <option value="label">Label Encoding</option>
-                </select>
-                <div>
-                    <small class="form-text text-muted">
-                        One-Hot Encoding: Tạo nhiều cột nhị phân (0/1) cho mỗi giá trị category.<br>
-                        Label Encoding: Chuyển đổi mỗi giá trị category thành một số nguyên.
-                    </small>
+        <div class="form-container">
+            <form method="post" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label>Upload CSV File:</label>
+                    <input type="file" name="file" accept=".csv" required class="form-control">
                 </div>
+                
+                <div class="form-group">
+                    <label>Phương pháp mã hóa dữ liệu category:</label>
+                    <select name="encoding_method" class="form-control">
+                        <option value="one-hot">One-Hot Encoding</option>
+                        <option value="label">Label Encoding</option>
+                    </select>
+                    <div>
+                        <small class="form-text text-muted">
+                            One-Hot Encoding: Tạo nhiều cột nhị phân (0/1) cho mỗi giá trị category.<br>
+                            Label Encoding: Chuyển đổi mỗi giá trị category thành một số nguyên.
+                        </small>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn btn-primary">Process Data</button>
+            </form>
+        </div>
+    {% else %}
+        <div class="result-container">
+            <div class="result-section">
+                <h3>Column Types</h3>
+                {% for col, type in column_types.items() %}
+                    <p>{{ col }}: {{ type }}</p>
+                {% endfor %}
             </div>
             
-            <button type="submit" class="btn">Process Data</button>
-        </form>
-    {% else %}
-        <div class="result-section">
-            <h3>Column Types</h3>
-            {% for col, type in column_types.items() %}
-                <p>{{ col }}: {{ type }}</p>
-            {% endfor %}
-        </div>
-        
-        <div class="result-section">
-            <h3>Missing Values Processed</h3>
-            {% for col, count in missing_values.items() %}
-                {% if count > 0 %}
-                    <p>{{ col }}: {{ count }} missing values replaced using median</p>
+            <div class="result-section">
+                <h3>Missing Values Processed</h3>
+                {% for col, count in missing_values.items() %}
+                    {% if count > 0 %}
+                        <p>{{ col }}: {{ count }} missing values replaced using median</p>
+                    {% endif %}
+                {% endfor %}
+            </div>
+            
+            <div class="result-section">
+                <h3>Outliers Detected</h3>
+                {% if boxplots %}
+                    {% for col, plot in boxplots.items() %}
+                        <div>
+                            <h4>{{ col }}</h4>
+                            <img src="data:image/png;base64,{{ plot }}" alt="Boxplot of {{ col }}" class="plot">
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p>No outliers detected</p>
                 {% endif %}
-            {% endfor %}
-        </div>
-        
-        <div class="result-section">
-            <h3>Outliers Detected</h3>
-            {% if boxplots %}
-                {% for col, plot in boxplots.items() %}
-                    <div>
-                        <h4>{{ col }}</h4>
-                        <img src="data:image/png;base64,{{ plot }}" alt="Boxplot of {{ col }}">
-                    </div>
-                {% endfor %}
-            {% else %}
-                <p>No outliers detected</p>
-            {% endif %}
-        </div>
-        
-        <div class="result-section">
-            <h3>High Correlations</h3>
-            {% if correlations %}
-                {% for corr in correlations %}
-                    <p>{{ corr.col1 }} and {{ corr.col2 }}: {{ corr.value|round(3) }}</p>
-                {% endfor %}
-            {% else %}
-                <p>No high correlations found</p>
-            {% endif %}
-        </div>
-        
-        <div class="result-section">
-            <h3>Categorical Encoding</h3>
-            {% if encoded_columns %}
-                <p>Phương pháp sử dụng: <strong>{{ encoding_method }}</strong></p>
-                {% for original_col, new_cols in encoded_columns.items() %}
-                    <div>
-                        <p>{{ original_col }} đã được chuyển đổi thành:</p>
-                        <ul>
-                            {% for col in new_cols %}
-                                <li>{{ col }}</li>
-                            {% endfor %}
-                        </ul>
-                    </div>
-                {% endfor %}
-            {% else %}
-                <p>Không có dữ liệu category cần chuyển đổi</p>
-            {% endif %}
-        </div>
-        
-        <div class="result-section">
-            <h3>Download Processed File</h3>
-            <a href="{{ url_for('download_file', filename=filename) }}" class="btn">Download CSV</a>
+            </div>
+            
+            <div class="result-section">
+                <h3>High Correlations</h3>
+                {% if correlations %}
+                    {% for corr in correlations %}
+                        <p>{{ corr.col1 }} and {{ corr.col2 }}: {{ corr.value|round(3) }}</p>
+                    {% endfor %}
+                {% else %}
+                    <p>No high correlations found</p>
+                {% endif %}
+            </div>
+            
+            <div class="result-section">
+                <h3>Categorical Encoding</h3>
+                {% if encoded_columns %}
+                    <p>Phương pháp sử dụng: <strong>{{ encoding_method }}</strong></p>
+                    {% for original_col, new_cols in encoded_columns.items() %}
+                        <div>
+                            <p>{{ original_col }} đã được chuyển đổi thành:</p>
+                            <ul>
+                                {% for col in new_cols %}
+                                    <li>{{ col }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p>Không có dữ liệu category cần chuyển đổi</p>
+                {% endif %}
+            </div>
+            
+            <div class="result-section">
+                <h3>Download Processed File</h3>
+                <a href="{{ url_for('download_file', filename=filename) }}" class="btn btn-primary">Download CSV</a>
+            </div>
         </div>
     {% endif %}
+</div>
 {% endblock %}

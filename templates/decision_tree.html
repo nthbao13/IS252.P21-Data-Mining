@@ -1,135 +1,128 @@
 {% extends "base.html" %}
 {% block content %}
-    <h2>Decision Tree Analysis (ID3)</h2>
-    
-    <!-- Form chọn file - Always visible -->
-    <div class="form-container">
-        <form method="POST" enctype="multipart/form-data" id="upload-form">
-            <div class="form-group">
-                <label for="file">Chọn file CSV:</label>
-                <input type="file" name="file" id="file" accept=".csv" required>
+    <div class="container">
+        <h2>Decision Tree Analysis (ID3)</h2>
+        
+        <div class="form-container">
+            <h3>Upload Data</h3>
+            <form method="POST" enctype="multipart/form-data" id="upload-form">
+                <div class="form-group">
+                    <label for="file">Chọn file CSV:</label>
+                    <input type="file" name="file" id="file" accept=".csv" required>
+                </div>
                 <button type="submit" class="btn">Tải lên</button>
-            </div>
-        </form>
-        {% if filename %}
-            <div class="file-info">
-                <p><strong>File hiện tại:</strong> {{ filename }}</p>
-                <form method="GET" action="{{ url_for('decision_tree_page') }}">
-                    <input type="hidden" name="reset" value="true">
-                    <button type="submit" class="btn btn-secondary">Xóa file hiện tại</button>
+            </form>
+            {% if filename %}
+                <div class="info-container">
+                    <p><strong>File hiện tại:</strong> {{ filename }}</p>
+                    <form method="GET" action="{{ url_for('decision_tree_page') }}">
+                        <input type="hidden" name="reset" value="true">
+                        <button type="submit" class="btn btn-secondary">Xóa file hiện tại</button>
+                    </form>
+                </div>
+            {% endif %}
+        </div>
+
+        {% if columns and not result %}
+            <div class="form-container">
+                <h3>Configure Decision Tree</h3>
+                <form method="POST" enctype="multipart/form-data">
+                    <input type="hidden" name="filename" value="{{ filename }}">
+                    <div class="form-group">
+                        <label for="target_col">Chọn cột mục tiêu:</label>
+                        <select name="target_col" id="target_col" required>
+                            <option value="">-- Chọn cột --</option>
+                            {% for col in columns %}
+                                <option value="{{ col }}">{{ col }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="criterion">Tiêu chí phân chia:</label>
+                        <select name="criterion" id="criterion" required>
+                            <option value="information_gain" {% if criterion == 'information_gain' %}selected{% endif %}>Information Gain</option>
+                            <option value="gini_index" {% if criterion == 'gini_index' %}selected{% endif %}>Gini Index</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn">Xây dựng cây quyết định</button>
                 </form>
             </div>
         {% endif %}
-    </div>
 
-    <!-- Hiển thị combobox chọn cột mục tiêu sau khi upload -->
-    {% if columns and not result %}
-        <div class="form-container">
-            <form method="POST" enctype="multipart/form-data">
-                <input type="hidden" name="filename" value="{{ filename }}">
-                <div class="form-group">
-                    <label for="target_col">Chọn cột mục tiêu (Target Column):</label>
-                    <select name="target_col" id="target_col" required>
-                        <option value="">-- Chọn cột --</option>
-                        {% for col in columns %}
-                            <option value="{{ col }}">{{ col }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="criterion">Tiêu chí phân chia:</label>
-                    <select name="criterion" id="criterion" required>
-                        <option value="information_gain" {% if criterion == 'information_gain' %}selected{% endif %}>Information Gain</option>
-                        <option value="gini_index" {% if criterion == 'gini_index' %}selected{% endif %}>Gini Index</option>
-                    </select>
-                </div>
-                <button type="submit" class="btn">Xây dựng cây quyết định</button>
-            </form>
-        </div>
-    {% endif %}
+        {% if error %}
+            <div class="error">{{ error }}</div>
+        {% endif %}
 
-    <!-- Hiển thị lỗi nếu có -->
-    {% if error %}
-        <div class="error">{{ error }}</div>
-    {% endif %}
-
-    <!-- Hiển thị kết quả -->
-    {% if result %}
-        <div class="result-container">
-            <!-- Hiển thị các bước giải thuật -->
-            <div class="steps-container">
-                <h3>Các bước giải thuật <span class="toggle-steps">[Hiện/Ẩn]</span></h3>
-                <div class="steps-content" style="display: none;">
-                    <ul>
-                        {% for step in result.steps %}
-                            <li>{{ step }}</li>
-                        {% endfor %}
-                    </ul>
-                </div>
-            </div>
-
-            <!-- Hiển thị các luật được rút ra -->
-            <div class="rules-container">
-                <h3>Các luật được rút ra <span class="toggle-rules">[Hiện/Ẩn]</span></h3>
-                <div class="rules-content" style="display: none;">
-                    <ul>
-                        {% for rule in result.rules %}
-                            <li>{{ rule }}</li>
-                        {% endfor %}
-                    </ul>
-                </div>
-            </div>
-
-            <!-- Hiển thị cây quyết định -->
-            <h3>Cây quyết định</h3>
-            <div class="tree-image">
-                <img src="data:image/png;base64,{{ result.tree_image }}" alt="Decision Tree" class="plot">
-            </div>
-            
-            <!-- Thông tin cơ bản -->
-            <div class="info-container">
-                <h3>Thông tin</h3>
-                <p><strong>Cột mục tiêu:</strong> {{ result.target }}</p>
-                <p><strong>Các thuộc tính:</strong> {{ result.features | join(', ') }}</p>
-                <p><strong>Tiêu chí phân chia:</strong> {{ 'Information Gain' if result.criterion == 'information_gain' else 'Gini Index' }}</p>
-            </div>
-
-            <!-- Form dự báo -->
-            <div class="predict-container">
-                <h3>Dự báo</h3>
-                <form method="POST" enctype="multipart/form-data" class="form-container">
-                    <input type="hidden" name="filename" value="{{ filename }}">
-                    <input type="hidden" name="target_col" value="{{ result.target }}">
-                    <input type="hidden" name="criterion" value="{{ result.criterion }}">
-                    {% for feature in result.features %}
-                        <div class="form-group">
-                            <label for="{{ feature }}">{{ feature }}:</label>
-                            <select name="{{ feature }}" id="{{ feature }}" required class="predict-select">
-                                <option value="">Chọn giá trị</option>
-                                {% for value in result.feature_values[feature] %}
-                                    <option value="{{ value }}" title="Chọn {{ value }} cho {{ feature }}">{{ value }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                    {% endfor %}
-                    <button type="submit" name="predict" value="true" class="btn">Dự báo</button>
-                </form>
-                
-                <!-- Hiển thị kết quả dự báo -->
-                {% if prediction is not none %}
-                    <div class="prediction-result">
-                        <h3>Kết quả dự báo</h3>
-                        <p><strong>Dự báo:</strong> {{ prediction }}</p>
+        {% if result %}
+            <div class="result-container">
+                <div class="steps-container">
+                    <h3>Các bước giải thuật <span class="toggle-steps">[Hiện/Ẩn]</span></h3>
+                    <div class="steps-content" style="display: none;">
+                        <ul>
+                            {% for step in result.steps %}
+                                <li>{{ step }}</li>
+                            {% endfor %}
+                        </ul>
                     </div>
-                {% endif %}
+                </div>
+
+                <div class="rules-container">
+                    <h3>Các luật được rút ra <span class="toggle-rules">[Hiện/Ẩn]</span></h3>
+                    <div class="rules-content" style="display: none;">
+                        <ul>
+                            {% for rule in result.rules %}
+                                <li>{{ rule }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+
+                <h3>Cây quyết định</h3>
+                <div class="tree-image">
+                    <img src="data:image/png;base64,{{ result.tree_image }}" alt="Decision Tree" class="plot">
+                </div>
+                
+                <div class="info-container">
+                    <h4>Thông tin</h4>
+                    <p><strong>Cột mục tiêu:</strong> {{ result.target }}</p>
+                    <p><strong>Các thuộc tính:</strong> {{ result.features | join(', ') }}</p>
+                    <p><strong>Tiêu chí phân chia:</strong> {{ 'Information Gain' if result.criterion == 'information_gain' else 'Gini Index' }}</p>
+                </div>
+
+                <div class="predict-container">
+                    <h3>Dự báo</h3>
+                    <form method="POST" enctype="multipart/form-data" class="form-container">
+                        <input type="hidden" name="filename" value="{{ filename }}">
+                        <input type="hidden" name="target_col" value="{{ result.target }}">
+                        <input type="hidden" name="criterion" value="{{ result.criterion }}">
+                        {% for feature in result.features %}
+                            <div class="form-group">
+                                <label for="{{ feature }}">{{ feature }}:</label>
+                                <select name="{{ feature }}" id="{{ feature }}" required class="predict-select">
+                                    <option value="">Chọn giá trị</option>
+                                    {% for value in result.feature_values[feature] %}
+                                        <option value="{{ value }}">{{ value }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        {% endfor %}
+                        <button type="submit" name="predict" value="true" class="btn">Dự báo</button>
+                    </form>
+                    
+                    {% if prediction is not none %}
+                        <div class="prediction-result">
+                            <h4>Kết quả dự báo</h4>
+                            <p><strong>Dự báo:</strong> {{ prediction }}</p>
+                        </div>
+                    {% endif %}
+                </div>
             </div>
-        </div>
-    {% endif %}
+        {% endif %}
+    </div>
 {% endblock %}
 
 {% block scripts %}
     <script>
-        // Toggle steps visibility
         document.addEventListener('DOMContentLoaded', function() {
             const toggleSteps = document.querySelector('.toggle-steps');
             if (toggleSteps) {
@@ -145,7 +138,6 @@
                 });
             }
 
-            // Toggle rules visibility
             const toggleRules = document.querySelector('.toggle-rules');
             if (toggleRules) {
                 toggleRules.addEventListener('click', function() {
@@ -159,13 +151,6 @@
                     }
                 });
             }
-
-            // Add hover effect for select options
-            document.querySelectorAll('.predict-select').forEach(select => {
-                select.addEventListener('mouseover', function() {
-                    this.style.cursor = 'pointer';
-                });
-            });
         });
     </script>
 {% endblock %}
