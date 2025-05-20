@@ -7,45 +7,41 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-def handle_file_upload(request, upload_folder):
-    logger.debug("Starting handle_file_upload")
-    
+from functools import wraps
+from flask import request, session, current_app
+import os
+import logging
+
+logger = logging.getLogger(__name__)
+
+def handle_file_upload(request, upload_folder, allow_missing=False):
+    """Handle file upload and return DataFrame, filename, and filepath or error"""
     if 'file' not in request.files:
         logger.error("No file part in request")
         return None, None, "Không có file được tải lên"
     
     file = request.files['file']
-    if not file or file.filename == '':
+    if file.filename == '':
+        if allow_missing:
+            logger.debug("No file selected, proceeding with allow_missing")
+            return None, None, None  # Return None for all values to indicate no file
         logger.error("No file selected")
-        return None, None, "Chưa chọn file"
+        return None, None, "Vui lòng chọn một file để tải lên"
     
-    if not file.filename.endswith('.csv'):
-        logger.error(f"Invalid file format: {file.filename}")
-        return None, None, "Chỉ hỗ trợ file CSV"
-    
-    filename = secure_filename(file.filename)
-    filepath = os.path.join(upload_folder, filename)
-    
-    try:
+    if file and file.filename.endswith('.csv'):
+        filename = file.filename
+        filepath = os.path.join(upload_folder, filename)
         file.save(filepath)
-        logger.debug(f"File saved: {filepath}")
-    except Exception as e:
-        logger.error(f"Error saving file {filepath}: {str(e)}")
-        return None, None, f"Lỗi lưu file: {str(e)}"
-    
-    try:
-        df = pd.read_csv(filepath, header=0)  # Giả định luôn có header
-        logger.debug(f"File read successfully: {filepath}")
-        return df, filename, filepath
-    except Exception as e:
-        logger.error(f"Error reading file {filepath}: {str(e)}")
-        if os.path.exists(filepath):
-            try:
-                os.remove(filepath)
-                logger.debug(f"Deleted invalid file: {filepath}")
-            except Exception as ex:
-                logger.error(f"Error deleting invalid file {filepath}: {str(ex)}")
-        return None, None, f"Lỗi đọc file: {str(e)}"
+        logger.debug(f"Saved file to {filepath}")
+        
+        try:
+            df = pd.read_csv(filepath)
+            return df, filename, filepath
+        except Exception as e:
+            logger.error(f"Error reading CSV file {filepath}: {str(e)}")
+            return None, filename, f"Lỗi đọc file CSV: {str(e)}"
+    else:
+        return None, file.filename, "File phải có định dạng .csv"
 
 def save_result_to_file(result, result_folder):
     result_id = str(uuid.uuid4())

@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kohonen SOM</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <div class="navbar">
+        <a href="/" class="{% if request.path == '/' %}active{% endif %}">Home</a>
+    </div>
+
+    <!-- Main Container -->
+    <div class="container">
+        <h2>Kohonen Self-Organizing Map</h2>
+
+        <!-- Error Section -->
+        {% if error %}
+            <div class="error">{{ error }}</div>
+        {% endif %}
+
+        <!-- File Upload Section -->
+        <div class="form-container">
+            <h3>Upload Data</h3>
+            <p><strong>Note:</strong> Upload a CSV file with numerical columns only.</p>
+            <form method="POST" enctype="multipart/form-data" id="upload-form">
+                <input type="hidden" name="action" value="upload">
+                <div class="form-group">
+                    <label for="file">Select CSV File:</label>
+                    <input type="file" name="file" id="file" accept=".csv" required onchange="previewData()">
+                </div>
+                <button type="submit" class="btn">Upload</button>
+            </form>
+        </div>
+
+        <!-- Data Preview Section -->
+        {% if df is not none %}
+            <div class="result-container">
+                <h3>Data Preview</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            {% for column in df.columns %}
+                                <th>{{ column }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in df.head(5).to_dict('records') %}
+                            <tr>
+                                {% for column in df.columns %}
+                                    <td>{{ row[column] }}</td>
+                                {% endfor %}
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- SOM Configuration Section -->
+            <div class="form-container">
+                <h3>Configure SOM</h3>
+                <form method="POST" action="/kohonen" id="train-form">
+                    <input type="hidden" name="action" value="train_som">
+                    <div class="form-group">
+                        <label for="num_clusters">Number of Clusters:</label>
+                        <input type="number" name="num_clusters" id="num_clusters" value="{{ session.get('num_clusters', 3) }}" min="1" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="map_height">Map Height (optional):</label>
+                        <input type="number" name="map_height" id="map_height" value="{{ session.get('map_height') }}" min="1">
+                    </div>
+                    <div class="form-group">
+                        <label for="map_width">Map Width (optional):</label>
+                        <input type="number" name="map_width" id="map_width" value="{{ session.get('map_width') }}" min="1">
+                    </div>
+                    <div class="form-group">
+                        <label for="learning_rate">Learning Rate (0 to 1):</label>
+                        <input type="number" name="learning_rate" id="learning_rate" value="{{ session.get('learning_rate', 0.4) }}" step="0.01" min="0" max="1" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="radius">Neighborhood Radius (>= 0):</label>
+                        <input type="number" name="radius" id="radius" value="{{ session.get('radius', 0.0) }}" step="0.1" min="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="iterations">Iterations (Epochs):</label>
+                        <input type="number" name="iterations" id="iterations" value="{{ session.get('iterations', 5) }}" min="1" required>
+                    </div>
+                    <button type="submit" class="btn">Train SOM</button>
+                </form>
+            </div>
+        {% endif %}
+
+        <!-- Results Section -->
+        {% if result and result.success %}
+            <div class="result-container">
+                <h3>SOM Results</h3>
+                <p><strong>Number of Clusters:</strong> {{ result.num_clusters }}</p>
+                <p><strong>Map Size:</strong> {{ result.map_height }} × {{ result.map_width }}</p>
+                <p><strong>Learning Rate:</strong> {{ result.learning_rate }}</p>
+                <p><strong>Neighborhood Radius:</strong> {{ result.radius }}</p>
+                <p><strong>Iterations:</strong> {{ result.iterations }}</p>
+                <p><strong>Columns Used:</strong> {{ result.column_names | join(', ') }}</p>
+            </div>
+
+            <!-- Neuron Weight Vectors -->
+            {% if result.weight_vectors %}
+                <div class="result-container">
+                    <h3>Neuron Weight Vectors</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Neuron</th>
+                                {% for column in result.column_names %}
+                                    <th>{{ column }}</th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for weight in result.weight_vectors %}
+                                <tr>
+                                    <td>{{ weight.Neuron }}</td>
+                                    {% for column in result.column_names %}
+                                        <td>{{ weight[column] }}</td>
+                                    {% endfor %}
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
+
+            <!-- Cluster Assignments -->
+            {% if result.clusters %}
+                <div class="result-container">
+                    <h3>Cluster Assignments</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Data Point Index</th>
+                                <th>Cluster</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for cluster in result.clusters %}
+                                <tr>
+                                    <td>{{ loop.index0 }}</td>
+                                    <td>{{ cluster }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
+        {% endif %}
+    </div>
+
+    <script>
+        // Preview uploaded CSV data
+        function previewData() {
+            const fileInput = document.getElementById('file');
+            if (!fileInput.files.length) return;
+
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const text = e.target.result;
+                const lines = text.split('\n').filter(line => line.trim() !== '');
+                if (lines.length < 1) return;
+
+                const headers = lines[0].split(',').map(h => h.trim());
+                const rows = lines.slice(1, 6).map(line => line.split(',').map(c => c.trim()));
+                const table = document.createElement('table');
+                const thead = document.createElement('thead');
+                const tbody = document.createElement('tbody');
+
+                const headerRow = document.createElement('tr');
+                headers.forEach(header => {
+                    const th = document.createElement('th');
+                    th.textContent = header;
+                    headerRow.appendChild(th);
+                });
+                thead.appendChild(headerRow);
+
+                rows.forEach(row => {
+                    const tr = document.createElement('tr');
+                    row.forEach(cell => {
+                        const td = document.createElement('td');
+                        td.textContent = cell;
+                        tr.appendChild(td);
+                    });
+                    tbody.appendChild(tr);
+                });
+
+                table.appendChild(thead);
+                table.appendChild(tbody);
+                const previewSection = document.createElement('div');
+                previewSection.className = 'result-container';
+                previewSection.innerHTML = '<h3>Data Preview</h3>';
+                previewSection.appendChild(table);
+                const existingPreview = document.querySelector('.result-container');
+                if (existingPreview) existingPreview.remove();
+                document.querySelector('#upload-form').after(previewSection);
+            };
+            reader.readAsText(file);
+        }
+    </script>
+</body>
+</html>

@@ -79,36 +79,43 @@ def gini_index_split(data, feature, target_col):
     total_samples = len(data)
     weighted_gini = 0
 
-    for value in data[feature].unique():
+    unique_values = data[feature].unique()
+
+    for value in unique_values:
         subset = data[data[feature] == value]
         subset_size = len(subset)
-        subset_gini = gini_index(subset, target_col)
-        weighted_gini += (subset_size / total_samples) * subset_gini
+        if subset_size > 0:  
+            subset_gini = gini_index(subset, target_col)
+            weighted_gini += (subset_size / total_samples) * subset_gini
 
     return weighted_gini
 
 def find_best_feature(data, target_col, features, criterion="information_gain"):
     """Tìm thuộc tính tốt nhất dựa trên tiêu chí được chọn"""
     best_feature = None
-    scores = {}  # Lưu điểm số của từng thuộc tính
+    best_score = None
+    scores = {}
+    
+    print(f"Tìm thuộc tính tốt nhất theo tiêu chí: {criterion}")
     
     if criterion == "information_gain":
-        max_score = -float('inf')
         for feature in features:
             score = information_gain(data, feature, target_col)
             scores[feature] = score
-            if score > max_score:
-                max_score = score
+            print(f"  - {feature}: Information Gain = {score:.6f}")
+            if best_score is None or score > best_score:
+                best_score = score
                 best_feature = feature
     elif criterion == "gini_index":
-        min_score = float('inf')
         for feature in features:
             score = gini_index_split(data, feature, target_col)
             scores[feature] = score
-            if score < min_score:  # Gini Index chọn giá trị nhỏ nhất
-                min_score = score
+            print(f"  - {feature}: Gini Index = {score:.6f}")
+            if best_score is None or score < best_score:  # Gini Index chọn giá trị nhỏ nhất
+                best_score = score
                 best_feature = feature
     
+    print(f"Chọn thuộc tính tốt nhất: {best_feature} với điểm số: {best_score:.6f}")
     return best_feature, scores
 
 # Class to represent a node in the decision tree
@@ -164,40 +171,121 @@ def extract_rules(node, path=None, rules=None):
     
     return rules
 
-# Function to build the ID3 decision tree
 def id3(data, target_col, features, criterion="information_gain", steps=None):
+    """Xây dựng cây quyết định theo thuật toán ID3"""
     if steps is None:
         steps = []
     
-    # Base cases
+    # Trường hợp cơ bản
     labels = data[target_col]
-    if len(labels.unique()) == 1:  # If all examples have the same label
-        steps.append(f"All examples have the same label: {labels.iloc[0]}")
-        return Node(label=labels.iloc[0])
+    if len(labels.unique()) == 1:  
+        unique_label = labels.iloc[0]
+        steps.append(f"Tất cả mẫu có cùng nhãn: {unique_label}")
+        return Node(label=unique_label)
     
-    if not features:  # If no features left to split on
+    if not features:  # Nếu không còn thuộc tính để phân chia
         majority_label = Counter(labels).most_common(1)[0][0]
-        steps.append(f"No features left to split on. Using majority label: {majority_label}")
+        steps.append(f"Không còn thuộc tính để phân chia. Sử dụng nhãn đa số: {majority_label}")
         return Node(label=majority_label)
     
-    # Find the best feature to split on
+    # Tìm thuộc tính tốt nhất để phân chia
     best_feature, scores = find_best_feature(data, target_col, features, criterion)
-    score_label = "Information Gain" if criterion == "information_gain" else "Gini Index"
-    steps.append(f"Best feature to split on: {best_feature} ({score_label}: {scores[best_feature]:.4f})")
     
-    # Create a root node for this feature
+    # Log thông tin chi tiết về điểm số
+    score_desc = scores[best_feature]
+    if criterion == "information_gain":
+        score_label = "Độ lợi thông tin"
+    else:
+        score_label = "Chỉ số Gini"
+        
+    steps.append(f"Thuộc tính tốt nhất để phân chia: {best_feature} ({score_label}: {score_desc:.6f})")
+    
+    # Thêm thông tin về tất cả các thuộc tính đã xem xét
+    for feature, score in scores.items():
+        steps.append(f"  - {feature}: {score_label} = {score:.6f}")
+    
+    # Tạo nút gốc cho thuộc tính này
     root = Node(feature=best_feature)
     
-    # Remove the best feature from the list of features
+    # Loại bỏ thuộc tính tốt nhất khỏi danh sách thuộc tính
     remaining_features = [f for f in features if f != best_feature]
     
-    # Split the data based on the best feature
+    # Phân chia dữ liệu dựa trên thuộc tính tốt nhất
     for value in data[best_feature].unique():
-        steps.append(f"Splitting on {best_feature} = {value}")
         subset = data[data[best_feature] == value]
+        subset_size = len(subset)
+        # Log số mẫu cho giá trị của thuộc tính
+        steps.append(f"Phân chia trên {best_feature} = {value}: có {subset_size} mẫu")
+        print(f"Phân chia trên {best_feature} = {value}: có {subset_size} mẫu")
+        
+        # Bổ sung log chi tiết về các thuộc tính khác trong tập con (ví dụ: thu nhập)
+        if len(subset) > 0 and remaining_features:
+            steps.append(f"Chi tiết tập con cho {best_feature} = {value}:")
+            for feature in remaining_features:
+                value_counts = subset[feature].value_counts()
+                steps.append(f"  - {feature}:")
+                for val, count in value_counts.items():
+                    steps.append(f"    - {val}: có {count} mẫu")
+                    print(f"    - {feature} = {val}: có {count} mẫu")
+        
         if len(subset) == 0:
             majority_label = Counter(labels).most_common(1)[0][0]
-            steps.append(f"No examples for {best_feature} = {value}. Using majority label: {majority_label}")
+            steps.append(f"Không có mẫu nào cho {best_feature} = {value}. Sử dụng nhãn đa số: {majority_label}")
+            root.branches[value] = Node(label=majority_label)
+        else:
+            root.branches[value] = id3(subset, target_col, remaining_features, criterion, steps)
+    
+    return root
+    """Xây dựng cây quyết định theo thuật toán ID3"""
+    if steps is None:
+        steps = []
+    
+    # Trường hợp cơ bản
+    labels = data[target_col]
+    if len(labels.unique()) == 1:  
+        unique_label = labels.iloc[0]
+        steps.append(f"Tất cả mẫu có cùng nhãn: {unique_label}")
+        return Node(label=unique_label)
+    
+    if not features:  # Nếu không còn thuộc tính để phân chia
+        majority_label = Counter(labels).most_common(1)[0][0]
+        steps.append(f"Không còn thuộc tính để phân chia. Sử dụng nhãn đa số: {majority_label}")
+        return Node(label=majority_label)
+    
+    # Tìm thuộc tính tốt nhất để phân chia
+    best_feature, scores = find_best_feature(data, target_col, features, criterion)
+    
+    # Log thông tin chi tiết hơn để debug
+    score_desc = scores[best_feature]
+    if criterion == "information_gain":
+        score_label = "Độ lợi thông tin"
+    else:
+        score_label = "Chỉ số Gini"
+        
+    steps.append(f"Thuộc tính tốt nhất để phân chia: {best_feature} ({score_label}: {score_desc:.6f})")
+    
+    # Thêm thông tin về tất cả các thuộc tính đã xem xét
+    for feature, score in scores.items():
+        steps.append(f"  - {feature}: {score_label} = {score:.6f}")
+    
+    # Tạo nút gốc cho thuộc tính này
+    root = Node(feature=best_feature)
+    
+    # Loại bỏ thuộc tính tốt nhất khỏi danh sách thuộc tính
+    remaining_features = [f for f in features if f != best_feature]
+    
+    # Phân chia dữ liệu dựa trên thuộc tính tốt nhất
+    for value in data[best_feature].unique():
+        subset = data[data[best_feature] == value]
+        subset_size = len(subset)
+        # In số mẫu cho từng giá trị của thuộc tính
+        print(f"Giá trị {value} trong thuộc tính {best_feature} có {subset_size} mẫu")
+        
+        steps.append(f"Phân chia trên {best_feature} = {value}")
+        
+        if len(subset) == 0:
+            majority_label = Counter(labels).most_common(1)[0][0]
+            steps.append(f"Không có mẫu nào cho {best_feature} = {value}. Sử dụng nhãn đa số: {majority_label}")
             root.branches[value] = Node(label=majority_label)
         else:
             root.branches[value] = id3(subset, target_col, remaining_features, criterion, steps)
@@ -233,14 +321,13 @@ def graph_to_base64(graph):
 # Function to run the decision tree algorithm
 def run_decision_tree(df, target_col, criterion="information_gain"):
     try:
-        # Validate inputs
         if target_col not in df.columns:
             return {'error': f"Cột mục tiêu '{target_col}' không tồn tại trong dữ liệu"}
         
-        # Get features (all columns except the target column)
         features = [col for col in df.columns if col != target_col]
         if not features:
             return {'error': "Không có thuộc tính nào để xây dựng cây quyết định"}
+        
         
         # Build the decision tree
         steps = []
@@ -270,7 +357,10 @@ def run_decision_tree(df, target_col, criterion="information_gain"):
             'rules': rules  # Add extracted rules
         }
     except Exception as e:
-        return {'error': f"Lỗi xây dựng cây quyết định: {str(e)}"}
+        import traceback
+        traceback_str = traceback.format_exc()
+        return {'error': f"Lỗi xây dựng cây quyết định: {str(e)}\n{traceback_str}"}
+
 
 # Function to predict using the decision tree
 def predict(tree_dict, instance):

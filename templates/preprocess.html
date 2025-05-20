@@ -40,7 +40,7 @@
             <h3>Missing Values Processed</h3>
             {% for col, count in missing_values.items() %}
                 {% if count > 0 %}
-                    <p>{{ col }}: {{ count }} missing values replaced using {{ missing_methods[col] }}</p>
+                    <p>{{ col }}: {{ count }} missing values replaced using median</p>
                 {% endif %}
             {% endfor %}
         </div>
