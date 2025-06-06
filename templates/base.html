@@ -14,7 +14,7 @@
         <a href="{{ url_for('decision_tree_page') }}" class="{% if request.path == '/decision-tree' %}active{% endif %}">Decision Tree</a>
         <a href="/reduct" class="{% if request.path == '/reduct' or request.path == '/reduct/analyze' %}active{% endif %}">Reduct</a>
         <a href="/kmeans" class="{% if request.path == '/kmeans' %}active{% endif %}">K-Means</a>
-        <a href="/naive_bayes" class="{% if request.path == '/naive-bayes' %}active{% endif %}">Naive Bayes</a>
+        <a href="{{ url_for('naive_bayes_page') }}" class="{% if request.path == '/naive-bayes' %}active{% endif %}">Naive Bayes</a>
         <a href="/kohonen" class="{% if request.path == '/kohonen' %}active{% endif %}">Kohonen SOM</a>
     </div>
     {% block content %}

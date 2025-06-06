@@ -10,7 +10,7 @@
     <div class="navbar">
         <a href="/" class="{% if request.path == '/' %}active{% endif %}">Home</a>
         <a href="/preprocess" class="{% if request.path == '/preprocess' %}active{% endif %}">Preprocessing</a>
-        <a href="/association_rules" class="{% if request.path == '/association_rules' %}active{% endif %}">Association Rules</a>
+        <a href="{{ url_for('association_rules_page') }}" class="{% if request.path == '/association_rules' %}active{% endif %}">Association Rules</a>
         <a href="/decision_tree" class="{% if request.path == '/decision_tree' %}active{% endif %}">Decision Tree</a>
         <a href="/reduct" class="{% if request.path == '/reduct' %}active{% endif %}">Reduct</a>
         <a href="/kmeans" class="{% if request.path == '/kmeans' %}active{% endif %}">K-Means</a>
