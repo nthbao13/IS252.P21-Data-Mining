@@ -289,3 +289,15 @@ table th {
         font-size: 1.125rem;
     }
 }
+
+.toggle-steps {
+    cursor: pointer !important;
+    user-select: none;
+    padding: 4px 8px;
+    border-radius: 4px;
+    background-color: rgba(49, 130, 206, 0.1);
+}
+
+.toggle-steps:hover {
+    background-color: rgba(49, 130, 206, 0.2);
+}

@@ -72,16 +72,52 @@
                     </table>
                 {% endif %}
                 
+                <!-- Debug version với inline onclick -->
                 <div class="steps-container">
-                    <h4>Các bước giải thuật <span class="toggle-steps">[Hiện/Ẩn]</span></h4>
-                    <div class="steps-content" style="display: none;">
-                        <ul>
+                    <h4>Các bước giải thuật 
+                        <button type="button" 
+                                onclick="toggleSteps()" 
+                                id="toggle-btn" 
+                                style="background: #3182ce; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                            Hiển thị
+                        </button>
+                    </h4>
+                    <div id="steps-content" style="display: none; background-color: #f7fafc; padding: 16px; border-radius: 6px; border: 1px solid #e2e8f0; margin-top: 8px;">
+                        <ul style="list-style-type: decimal; padding-left: 24px; margin: 0;">
                             {% for step in result.steps %}
-                                <li>{{ step }}</li>
+                                <li style="margin-bottom: 8px; color: #4a5568; font-size: 0.875rem;">{{ step }}</li>
                             {% endfor %}
                         </ul>
                     </div>
                 </div>
+
+                <!-- Script inline để debug -->
+                <script>
+                    function toggleSteps() {
+                        console.log('toggleSteps function called!');
+                        const content = document.getElementById('steps-content');
+                        const btn = document.getElementById('toggle-btn');
+                        
+                        console.log('Content element:', content);
+                        console.log('Button element:', btn);
+                        console.log('Current display:', content.style.display);
+                        
+                        if (content.style.display === 'none' || content.style.display === '') {
+                            content.style.display = 'block';
+                            btn.textContent = 'Ẩn';
+                            console.log('Showing content');
+                        } else {
+                            content.style.display = 'none';
+                            btn.textContent = 'Hiển thị';
+                            console.log('Hiding content');
+                        }
+                    }
+                    
+                    // Test ngay khi load trang
+                    console.log('Script loaded!');
+                    console.log('Toggle button exists:', document.getElementById('toggle-btn') !== null);
+                    console.log('Steps content exists:', document.getElementById('steps-content') !== null);
+                </script>
                 
                 {% if result.plot %}
                     <h4>Biểu đồ phân cụm ({{ result.data.shape[1] - 1 }}-chiều {% if result.data.shape[1] - 1 > 3 %}giảm xuống 2D{% elif result.data.shape[1] - 1 == 3 %}3D{% elif result.data.shape[1] - 1 == 2 %}2D{% else %}1D{% endif %})</h4>
@@ -143,27 +179,20 @@
     {% block scripts %}
         <script>
             document.addEventListener('DOMContentLoaded', function() {
-                const toggleSteps = document.querySelector('.toggle-steps');
-                if (toggleSteps) {
-                    toggleSteps.addEventListener('click', function() {
-                        const stepsContent = document.querySelector('.steps-content');
-                        if (stepsContent.style.display === 'none') {
-                            stepsContent.style.display = 'block';
-                            this.textContent = '[Ẩn]';
-                        } else {
-                            stepsContent.style.display = 'none';
-                            this.textContent = '[Hiện/Ẩn]';
-                        }
-                    });
-                }
-
+                console.log('DOM Content Loaded');
+                
+                // Test các element tồn tại không
+                console.log('Available elements:');
+                console.log('- toggle-btn:', document.getElementById('toggle-btn'));
+                console.log('- steps-content:', document.getElementById('steps-content'));
+                
+                // Update centroid table function
                 window.updateCentroidTable = function() {
+                    console.log('Updating centroid table...');
                     const K = parseInt(document.getElementById('K').value) || 3;
                     const fileInput = document.getElementById('file');
                     const useSampleData = document.getElementById('use_sample_data').checked;
                     const centroidContainer = document.getElementById('centroid-input-container');
-                    const centroidTableHeader = document.getElementById('centroid-table-header');
-                    const centroidTableBody = document.getElementById('centroid-table-body');
                     let dimensions = parseInt(document.getElementById('dimensions').value) || 0;
 
                     if (!fileInput.files.length && !useSampleData) {
@@ -173,6 +202,7 @@
 
                     if (useSampleData) {
                         dimensions = 3;
+                        createCentroidTable(K, dimensions);
                     } else if (fileInput.files.length) {
                         const formData = new FormData();
                         formData.append('file', fileInput.files[0]);
@@ -196,8 +226,6 @@
                         });
                         return;
                     }
-
-                    createCentroidTable(K, dimensions);
                 };
 
                 function createCentroidTable(K, dimensions) {
